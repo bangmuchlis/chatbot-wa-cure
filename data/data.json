@@ -1,0 +1,22 @@
+[
+  {
+    "question": "Apa kebijakan cuti perusahaan kita?",
+    "answer": "Karyawan penuh waktu berhak atas 20 hari cuti berbayar per tahun. Hari cuti dapat diambil setelah menyelesaikan 6 bulan masa kerja. Hari cuti yang tidak digunakan dapat dibawa ke tahun berikutnya hingga maksimum 5 hari. Permintaan cuti harus diajukan setidaknya 2 minggu sebelumnya melalui portal HR."
+  },
+  {
+    "question": "Bagaimana cara mengajukan lisensi perangkat lunak baru?",
+    "answer": "Untuk mengajukan lisensi perangkat lunak baru, silakan ajukan tiket melalui portal IT Service Desk. Sertakan nama perangkat lunak, versi, dan justifikasi bisnis. Lisensi perangkat lunak standar biasanya disetujui dalam 2 hari kerja. Untuk perangkat lunak khusus, persetujuan dapat memakan waktu hingga 5 hari kerja dan mungkin memerlukan persetujuan kepala departemen."
+  },
+  {
+    "question": "Apa kebijakan kerja jarak jauh kita?",
+    "answer": "Perusahaan kami mengikuti model kerja hibrida. Karyawan dapat bekerja dari jarak jauh hingga 3 hari per minggu. Hari kerja jarak jauh harus dikoordinasikan dengan tim Anda dan disetujui oleh manajer langsung Anda. Semua kerja jarak jauh memerlukan koneksi internet yang stabil dan ruang kerja khusus. Jam kolaborasi inti adalah pukul 10:00 hingga 15:00 WIB."
+  },
+  {
+    "question": "Bagaimana cara mengajukan laporan pengeluaran?",
+    "answer": "Laporan pengeluaran harus diajukan melalui sistem manajemen pengeluaran perusahaan. Sertakan semua kwitansi, kategorikan pengeluaran dengan tepat, dan tambahkan deskripsi singkat untuk setiap entri. Laporan harus diajukan dalam waktu 30 hari sejak pengeluaran. Untuk pengeluaran di atas $100, dokumentasi tambahan mungkin diperlukan. Semua laporan memerlukan persetujuan manajer."
+  },
+  {
+    "question": "Apa proses untuk melaporkan insiden keamanan?",
+    "answer": "Jika Anda menemukan insiden keamanan, segera hubungi Tim Keamanan di security@company.com atau telepon hotline keamanan 24/7. Jangan mencoba menyelidiki atau menyelesaikan insiden sendiri. Catat apa yang Anda amati, termasuk waktu dan sistem yang terpengaruh. Tim Keamanan akan memandu Anda melalui proses respons insiden dan mungkin memerlukan bantuan Anda untuk penyelidikan."
+  }
+]

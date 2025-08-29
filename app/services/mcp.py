@@ -8,8 +8,6 @@ import nest_asyncio
 nest_asyncio.apply()
 
 class MCPClient:
-    """Client untuk berinteraksi dengan MCP server."""
-    
     def __init__(self, server_script_path: str = "server.py", debug_logging: bool = False):
         self.server_script_path = server_script_path
         self.debug_logging = debug_logging
@@ -19,7 +17,6 @@ class MCPClient:
         self.write = None
 
     async def connect(self):
-        """Menghubungkan ke MCP server."""
         try:
             server_params = StdioServerParameters(
                 command="python",
@@ -40,7 +37,6 @@ class MCPClient:
             raise
 
     async def get_knowledge_base(self) -> str:
-        """Mengambil knowledge base dari MCP server."""
         try:
             if not self.session:
                 await self.connect()
@@ -51,5 +47,4 @@ class MCPClient:
             return "Error: Could not retrieve knowledge base."
 
     async def cleanup(self):
-        """Membersihkan sumber daya MCP."""
         await self.exit_stack.aclose()

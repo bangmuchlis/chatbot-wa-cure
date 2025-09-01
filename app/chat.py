@@ -11,7 +11,6 @@ logger = logging.getLogger(__name__)
 
 @router.get("/webhook")
 async def webhook_verify(request: Request):
-    """WhatsApp webhook verification."""
     mode = request.query_params.get('hub.mode')
     token = request.query_params.get('hub.verify_token')
     challenge = request.query_params.get('hub.challenge')
@@ -68,12 +67,22 @@ async def webhook_process(request: Request):
                     # --- END OF FILTER ---
 
                     incoming_text = message['text'].get('body', '').strip()
+                    print(f'IC: {incoming_text}')
 
                     logger.info(f"📩 New message from {sender_id[-4:]}: {incoming_text[:50]}...")
 
                     try:
                         knowledge_base = await mcp_client.get_knowledge_base()
                         ai_response = await ollama_client.get_response(incoming_text, knowledge_base)
+                        # Alur RAG sekarang berjalan untuk setiap pesan, termasuk sapaan
+                        # logger.info(f"🔎 Mencari konteks untuk pesan: '{incoming_text}'")
+                        # retrieved_context = await mcp_client.search_knowledge_base(query=incoming_text)
+                        
+                        # logger.info(f"🧠 Menghasilkan jawaban dengan konteks...")
+                        # ai_response = await ollama_client.get_response(
+                        #     user_message=incoming_text,
+                        #     knowledge_base=retrieved_context
+                        # )
 
                         if len(ai_response) > 4000:
                             ai_response = ai_response[:4000] + "..."

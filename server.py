@@ -1,6 +1,9 @@
 import os
+import sys
 import json
 from mcp.server.fastmcp import FastMCP
+sys.path.append(os.path.abspath(os.path.dirname(__file__)))
+from app.utils.chroma_utils import get_chroma_collection
 
 mcp = FastMCP(
     name="Knowledge Base",
@@ -39,5 +42,27 @@ def get_knowledge_base() -> str:
     except Exception as e:
         return f"Error: {str(e)}"
 
+@mcp.tool()
+def search_knowledge_base(query: str) -> str:
+    try:
+        collection = get_chroma_collection()
+        
+        # Lakukan pencarian di ChromaDB. Ambil 3 hasil teratas.
+        results = collection.query(query_texts=[query], n_results=3)
+
+        documents = results.get('documents')
+        if not documents or not documents[0]:
+            return "Tidak ada informasi yang ditemukan di knowledge base."
+
+        # Format hasil pencarian menjadi satu string konteks
+        context = "Berdasarkan knowledge base, berikut informasi yang relevan:\n\n"
+        for i, doc in enumerate(documents[0], 1):
+            context += f"--- Konteks Relevan {i} ---\n{doc}\n\n"
+            
+        return context.strip()
+    except Exception as e:
+        print(f"Error saat mencari di ChromaDB: {e}")
+        return f"Error: Terjadi kesalahan saat mencari di knowledge base."
+    
 if __name__ == "__main__":
     mcp.run(transport="stdio")

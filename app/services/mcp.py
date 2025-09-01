@@ -27,11 +27,6 @@ class MCPClient:
             self.session = await self.exit_stack.enter_async_context(ClientSession(self.stdio, self.write))
             await self.session.initialize()
             
-            if self.debug_logging:
-                tools_result = await self.session.list_tools()
-                print("\nConnected to MCP server with tools:")
-                for tool in tools_result.tools:
-                    print(f"  - {tool.name}: {tool.description}")
         except Exception as e:
             print(f"⚠️ Failed to connect to MCP server: {str(e)}")
             raise
@@ -46,5 +41,18 @@ class MCPClient:
             print(f"⚠️ MCP error: {str(e)}")
             return "Error: Could not retrieve knowledge base."
 
+    async def search_knowledge_base(self, query: str) -> str:
+        """Memanggil tool search_knowledge_base di server MCP."""
+        try:
+            if not self.session: await self.connect()
+            result = await self.session.call_tool(
+                "search_knowledge_base", 
+                arguments={"query": query}
+            )
+            return result.content[0].text if result.content else "Tidak ada konteks relevan ditemukan."
+        except Exception as e:
+            print(f"⚠️ Error MCP saat pencarian: {str(e)}")
+            return "Error: Gagal mencari di knowledge base."
+            
     async def cleanup(self):
         await self.exit_stack.aclose()

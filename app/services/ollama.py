@@ -17,14 +17,13 @@ def build_aiwa_prompt(knowledge_base: str):
     Membuat system prompt Aiwa dengan aturan RAG menggunakan LangChain.
     """
     if not knowledge_base or knowledge_base.strip() == "":
-        # Fallback jika knowledge_base kosong
         system_rules = """
-Anda adalah Aiwa, asisten AI dari Warna Warni Media.
+        Anda adalah Aiwa, asisten AI dari Warna Warni Media.
 
-PERATURAN:
-- Karena KNOWLEDGE BASE kosong, Anda WAJIB menjawab semua pertanyaan hanya dengan:
-  "Maaf, saya tidak memiliki informasi mengenai hal tersebut."
-"""
+        PERATURAN:
+        - Karena KNOWLEDGE BASE kosong, Anda WAJIB menjawab semua pertanyaan hanya dengan:
+        "Maaf, saya tidak memiliki informasi mengenai hal tersebut."
+        """
         prompt = ChatPromptTemplate.from_messages([
             SystemMessagePromptTemplate.from_template(system_rules),
             HumanMessagePromptTemplate.from_template("{user_message}")
@@ -85,7 +84,6 @@ def lc_messages_to_ollama(messages):
         elif msg.type == "ai":
             converted.append({"role": "assistant", "content": msg.content})
         else:
-            # fallback generic
             converted.append({"role": msg.type, "content": msg.content})
     return converted
 
@@ -105,7 +103,6 @@ class OllamaClient:
         prompt = build_aiwa_prompt(knowledge_base)
         formatted_prompt = prompt.format_prompt(user_message=user_message)
 
-        # Konversi LangChain message → dict agar bisa di-JSON
         ollama_messages = lc_messages_to_ollama(formatted_prompt.to_messages())
 
         payload = {

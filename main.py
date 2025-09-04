@@ -11,4 +11,4 @@ if __name__ == "__main__":
     logger.info("Starting WhatsApp Chatbot with Ollama and MCP...")
     logger.info(f"Model: {settings.OLLAMA_MODEL}")
     logger.info(f"Debug logging: {settings.DEBUG_LOGGING}")
-    uvicorn.run(app, host="0.0.0.0", port=settings.PORT)
+    uvicorn.run(app, host="localhost", port=settings.PORT)

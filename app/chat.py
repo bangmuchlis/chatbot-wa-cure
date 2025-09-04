@@ -2,10 +2,13 @@ import json
 import logging
 import traceback
 import re
+import httpx
+from pydantic import BaseModel
 from typing import Set
 from fastapi import APIRouter, Request, HTTPException, BackgroundTasks
 from .config import settings
 from langchain_core.messages import HumanMessage, AIMessage, SystemMessage
+from datetime import datetime
 
 router = APIRouter()
 logger = logging.getLogger(__name__)
@@ -24,7 +27,7 @@ def extract_clean_response(result: dict) -> str | None:
     if not content or not isinstance(content, str):
         return None
 
-    logger.info(f"Raw agent response: {content}") # Log sebelum dibersihkan
+    logger.info(f"Raw agent response: {content}")
     
     if "</think>" in content:
         parts = content.split("</think>", 1)
@@ -48,10 +51,12 @@ async def process_message_background(
         logger.info(f"[{message_id}] 🚀 Background task started for sender ...{sender_id[-4:]}")
         
         user_history = chat_histories.get(sender_id, [])
+
         logger.info(f"[{message_id}] 📜 Loaded chat history ({len(user_history)} messages) for ...{sender_id[-4:]}")
         logger.info(f"[{message_id}] 📩 Chat history content {user_history}")
 
         full_conversation = [SystemMessage(content=system_instruction)]
+        # full_conversation = []
         full_conversation.extend(user_history)
         full_conversation.append(HumanMessage(content=incoming_text))
         logger.info(f"[{message_id}] 📝 Full conversation prepared with {len(full_conversation)} messages")
@@ -77,6 +82,7 @@ async def process_message_background(
             HumanMessage(content=incoming_text),
             AIMessage(content=ai_response)
         ])
+
         chat_histories[sender_id] = user_history
         logger.info(f"[{message_id}] 💾 Updated chat history (total {len(user_history)} messages)")
         
@@ -85,7 +91,12 @@ async def process_message_background(
             ai_response = ai_response[:4000] + "..."
         
         logger.info(f"[{message_id}] 📤 Sending response to {sender_id[-4:]}: {ai_response[:200]}...")
-        await whatsapp_client.send_message(sender_id, ai_response)
+        # await whatsapp_client.send_message(sender_id, ai_response)
+        print(sender_id)
+
+        url = "https://zw8vn80x-3010.asse.devtunnels.ms/whatsapp/message/"
+        async with httpx.AsyncClient() as client:
+            response = await client.post(url)
 
     except Exception as e:
         logger.error(f"[{message_id}] ❌ Error in background task: {str(e)}")
@@ -119,14 +130,23 @@ async def webhook_process(request: Request, background_tasks: BackgroundTasks):
     """Menerima pesan, memeriksa duplikat, lalu memproses di latar belakang."""
     try:
         data = await request.json()
+        print(f'data:{data}')
         if settings.DEBUG_LOGGING:
             logger.debug(f"Webhook received: {json.dumps(data, indent=2, ensure_ascii=False)}")
 
         if data.get('object') == 'whatsapp_business_account':
             entry = data.get('entry', [])
             if entry and entry[0].get('changes'):
+                # Formatting lokal
+                # value = entry[0]['changes'][0].get('value', {})
+                # messages = value.get('messages', [])
+                
+                # Formatting lokal
                 value = entry[0]['changes'][0].get('value', {})
-                messages = value.get('messages', [])
+                metadata = value.get("metadata", {})
+                contacts = value.get("contacts", [])
+                messages = value.get("messages", [])
+
                 if messages:
                     message = messages[0]
                     message_id = message.get('id')
@@ -137,6 +157,41 @@ async def webhook_process(request: Request, background_tasks: BackgroundTasks):
                         return {"status": "OK"}
                     
                     processing_ids.add(message_id)
+                    
+                    transformed = {
+                        "baseMessage": {
+                            "channelId": 1,
+                            "messageLogId": 0,
+                            "contactId": 0,
+                            "companyHuntingNumberId": 0,
+                            "contactNumber": f"+{message.get('from', '').strip()}",
+                            "companyHuntingNumber": f"+{metadata.get('display_phone_number', '')}",
+                            "content": (
+                                message['text']['body'].strip()
+                                if message.get("type") == "text"
+                                else f"[{message.get('type')}]"
+                            ),
+                            "employeeId": None,
+                            "type": "IN",
+                            "status": "delivered",
+                            "format": message.get("type"),
+                            "intent": "chat",
+                            "timestamp": datetime.utcfromtimestamp(
+                                int(message.get("timestamp", "0"))
+                            ).isoformat() + "Z",
+                        },
+                        "whatsappMessage": {
+                            "waMessageId": message_id,
+                            "isForwarded": message.get("context", {}).get("forwarded", False),
+                        },
+                        "contact": {
+                            "name": contacts[0]["profile"]["name"] if contacts else None,
+                            "accountId": f"+{contacts[0]['wa_id']}" if contacts else None,
+                            "channelId": 1,
+                        },
+                    }
+
+                    print(f"data:{transformed}")
 
                     if message.get('type') == 'text':
                         sender_id = message.get('from', '').strip()
@@ -168,3 +223,24 @@ async def webhook_process(request: Request, background_tasks: BackgroundTasks):
 async def index():
     """Endpoint status untuk memeriksa apakah bot berjalan."""
     return {"status": "✅ Chatbot WhatsApp sedang berjalan."}
+
+@router.get("/ping")
+async def ping():
+    """Endpoint sederhana untuk di-hit dari luar (misalnya healthcheck)."""
+    return {"message": "pong"}
+
+# 🔹 Definisikan body request
+class EchoRequest(BaseModel):
+    message: str
+    sender: str | None = None  # optional field
+
+@router.post("/echo")
+async def echo(body: EchoRequest):
+    """
+    Endpoint sederhana POST untuk menerima data dari luar.
+    """
+    print(body.message)
+    return {
+        "received_message": body.message,
+        "from": body.sender
+    }

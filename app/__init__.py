@@ -105,5 +105,4 @@ def create_app() -> FastAPI:
 
     from . import chat
     app.include_router(chat.router)
-
     return app

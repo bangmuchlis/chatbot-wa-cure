@@ -2,6 +2,7 @@ import json
 import logging
 import traceback
 import re
+import time
 from typing import Set
 from fastapi import APIRouter, Request, HTTPException, BackgroundTasks
 from .config import settings
@@ -44,6 +45,7 @@ async def process_message_background(
     processing_ids: Set[str],
     message_id: str
 ):
+    start_time = time.perf_counter() 
     try:
         logger.info(f"[{message_id}] 🚀 Background task started for sender ...{sender_id[-4:]}")
         
@@ -66,7 +68,7 @@ async def process_message_background(
         logger.info(f"[{message_id}] 🧹 Cleaned response: {raw_response[:200] if raw_response else 'EMPTY'}")
         
         if not raw_response:
-            ai_response = "Maaf, saya mengalami kesulitan memproses permintaan Anda."
+            ai_response = "Maaf, sistem gagal memproses permintaan Anda."
             logger.warning(f"[{message_id}] ⚠️ Agent returned empty response for ...{sender_id[-4:]}")
         else:
             ai_response = raw_response
@@ -92,9 +94,13 @@ async def process_message_background(
         if settings.DEBUG_LOGGING:
             logger.debug(f"[{message_id}] Full traceback: {traceback.format_exc()}")
         await whatsapp_client.send_message(
-            sender_id, "Maaf, saya sedang mengalami masalah. Silakan coba lagi nanti."
+            sender_id, "Maaf, sistem sedang mengalami masalah. Silakan coba lagi nanti."
         )
     finally:
+        end_time = time.perf_counter()
+        elapsed = end_time - start_time
+        logger.info(f"[{message_id}] ⏱ Response time: {elapsed:.2f} seconds")
+
         processing_ids.discard(message_id)
         logger.info(f"[{message_id}] ✅ Finished processing (removed from processing_ids)")
 

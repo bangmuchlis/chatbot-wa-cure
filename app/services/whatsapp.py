@@ -1,5 +1,3 @@
-# Di dalam file services/whatsapp.py
-
 import logging
 import aiohttp
 import json

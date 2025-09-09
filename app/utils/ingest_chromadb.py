@@ -14,6 +14,7 @@ from app.config import settings
 
 CHROMA_COLLECTION_NAME = "documents"
 CHROMA_PERSIST_DIR = os.path.join(PROJECT_ROOT, "chroma_db")
+#CHROMA_PERSIST_DIR = "/mnt/c/Users/aiai/Documents/Development/Projects/chatbot-wwm/chroma_db"
 
 
 def load_excel(file_path: str):

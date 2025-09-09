@@ -12,7 +12,11 @@ class Settings:
     OLLAMA_URL: str = os.getenv('OLLAMA_URL')
     OLLAMA_EMBEDDING: str = os.getenv('OLLAMA_EMBEDDING')
     ALLOWED_CONTACT: str = os.getenv('ALLOWED_CONTACT')
-    DEBUG_LOGGING: bool = os.getenv('DEBUG_LOGGING')
+    OPENROUTER_API_KEY: bool = os.getenv('OPENROUTER_API_KEY')
+    GEMINI_API_KEY: bool = os.getenv('GEMINI_API_KEY')
+    GROQ_API_KEY: bool = os.getenv('GROQ_API_KEY')
+    SQLALCHEMY_DATABASE_URL: bool = os.getenv('SQLALCHEMY_DATABASE_URL')
+    DEBUG_LOGGING: bool = os.getenv('LOGGING')
     PORT: int = int(os.getenv('PORT', 5000))
     META_API_URL: str = f"https://graph.facebook.com/{META_API_VERSION}/{PHONE_NUMBER_ID}/messages"
 

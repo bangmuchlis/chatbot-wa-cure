@@ -2,6 +2,7 @@ import logging
 import aiohttp
 import json
 import os
+from app.config import settings
 
 logger = logging.getLogger(__name__)
 
@@ -77,9 +78,9 @@ class WhatsAppClient:
 
     async def send_image(self, recipient_id: str, media: str, is_link: bool = False) -> bool:
         """
-        Kirim gambar ke WhatsApp.
-        - Kalau is_link=True → media dianggap URL publik.
-        - Kalau is_link=False → media dianggap media_id hasil upload.
+        Send image to WhatsApp.
+        - is_link=True →  public URL.
+        - is_link=False → media_id upload result.
         """
         image_payload = {"link": media} if is_link else {"id": media}
 
@@ -102,4 +103,33 @@ class WhatsAppClient:
                         return False
         except Exception as e:
             logger.error(f"Exception sending image: {e}")
+            return False
+        
+    async def send_document(self, recipient_id: str, media: str, filename: str, is_link: bool = False) -> bool:
+        """
+        Send document to WhatsApp.
+        - is_link=True →  public URL.
+        - is_link=False → media_id upload result..
+        """
+        document_payload = {"link": media, "filename": filename} if is_link else {"id": media, "filename": filename}
+
+        payload = {
+            "messaging_product": "whatsapp",
+            "to": recipient_id,
+            "type": "document",
+            "document": document_payload
+        }
+
+        try:
+            async with aiohttp.ClientSession() as session:
+                async with session.post(self.api_url, headers=self.headers, json=payload) as response:
+                    if 200 <= response.status < 300:
+                        logger.info(f"✅ Document sent to {recipient_id} ({filename})")
+                        return True
+                    else:
+                        error_details = await response.json()
+                        logger.error(f"❌ Failed to send document: {error_details}")
+                        return False
+        except Exception as e:
+            logger.error(f"Exception sending document: {e}")
             return False

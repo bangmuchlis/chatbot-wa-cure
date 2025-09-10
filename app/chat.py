@@ -3,38 +3,41 @@ import logging
 import traceback
 import re
 import time
+
 from typing import Set
 from fastapi import APIRouter, Request, HTTPException, BackgroundTasks
-from .config import settings
 from langchain_core.messages import HumanMessage, AIMessage, SystemMessage
-from app.utils.ingest_img import search_image
+from app.utils.ingest_image import search_image
+from app.handlers.file_handler import handle_user_pdf_request, handle_list_documents
+from .config import settings
 
 router = APIRouter()
 logger = logging.getLogger(__name__)
 
+
 def extract_clean_response(result: dict) -> str | None:
-    """Mengekstrak konten dari pesan terakhir dan membersihkan tag <think>."""
     if not isinstance(result, dict) or "messages" not in result:
         return None
-    
+
     messages = result.get("messages", [])
     if not messages or not isinstance(messages, list):
         return None
-    
+
     last_message = messages[-1]
     content = getattr(last_message, 'content', None)
     if not content or not isinstance(content, str):
         return None
 
-    logger.info(f"Raw agent response: {content}") # Log sebelum dibersihkan
-    
+    logger.info(f"Raw agent response: {content}")
+
     if "</think>" in content:
         parts = content.split("</think>", 1)
         clean_content = parts[1].strip() if len(parts) > 1 else ""
     else:
         clean_content = content.strip()
-    
+
     return clean_content if clean_content else None
+
 
 async def process_message_background(
     agent,
@@ -46,21 +49,34 @@ async def process_message_background(
     processing_ids: Set[str],
     message_id: str
 ):
-    start_time = time.perf_counter() 
+    start_time = time.perf_counter()
     try:
         logger.info(f"[{message_id}] 🚀 Background task started for sender ...{sender_id[-4:]}")
 
+        # Send image
         if "gambar" in incoming_text.lower():
             image_url = search_image(incoming_text, n_results=1)
             if image_url:
                 await whatsapp_client.send_image(sender_id, image_url, is_link=True)
-
                 logger.info(f"[{message_id}] 🖼 Sent image for query: {incoming_text}")
                 return
             else:
                 await whatsapp_client.send_message(sender_id, "Maaf, gambar tidak ditemukan.")
                 return
 
+        # List files
+        if any(kw in incoming_text.lower() for kw in ["daftar dokumen", "list dokumen", "dokumen tersedia"]):
+            await handle_list_documents(whatsapp_client, sender_id)
+            logger.info(f"[{message_id}] 📋 Menampilkan daftar dokumen")
+            return
+        
+        # Send files
+        if any(kw in incoming_text.lower() for kw in ["pdf", "dokumen", "file", "unduh", "download"]):
+            await handle_user_pdf_request(whatsapp_client, sender_id, incoming_text)
+            logger.info(f"[{message_id}] 📄 Sent PDF for query: {incoming_text}")
+            return
+
+        # Ask Model
         user_history = chat_histories.get(sender_id, [])
         full_conversation = [SystemMessage(content=system_instruction)]
         full_conversation.extend(user_history)
@@ -114,6 +130,7 @@ async def webhook_verify(request: Request):
     logger.warning("Bad request: Missing parameters")
     raise HTTPException(status_code=400, detail="Bad Request: Missing parameters")
 
+
 @router.post("/webhook")
 async def webhook_process(request: Request, background_tasks: BackgroundTasks):
     """Menerima pesan, memeriksa duplikat, lalu memproses di latar belakang."""
@@ -135,7 +152,7 @@ async def webhook_process(request: Request, background_tasks: BackgroundTasks):
                     if not message_id or message_id in processing_ids:
                         logger.warning(f"Ignoring duplicate or invalid message_id: {message_id}")
                         return {"status": "OK"}
-                    
+
                     processing_ids.add(message_id)
 
                     if message.get('type') == 'text':
@@ -151,18 +168,19 @@ async def webhook_process(request: Request, background_tasks: BackgroundTasks):
                             whatsapp_client = request.app.state.whatsapp_client
                             chat_histories = request.app.state.chat_histories
                             system_instruction = request.app.state.system_instruction
-                            
+
                             background_tasks.add_task(
                                 process_message_background,
                                 agent, whatsapp_client, chat_histories,
                                 system_instruction, sender_id, incoming_text,
                                 processing_ids, message_id
                             )
-        
+
         return {"status": "OK"}
     except Exception as e:
         logger.error(f"Error in main webhook endpoint: {str(e)}")
         return {"status": "error", "detail": str(e)}
+
 
 @router.get("/")
 async def index():

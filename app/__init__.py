@@ -1,17 +1,16 @@
 import logging
 from fastapi import FastAPI
 from contextlib import asynccontextmanager
-from .config import settings
-from .services.whatsapp import WhatsAppClient
 from langchain_mcp_adapters.client import MultiServerMCPClient
 from langgraph.prebuilt import create_react_agent
-from langchain_ollama import ChatOllama
-import os
-from pathlib import Path
 from langchain_openai import ChatOpenAI
+from langchain_ollama import ChatOllama
 from langchain_google_genai import ChatGoogleGenerativeAI
 from langchain_groq import ChatGroq
+from pathlib import Path
 from fastapi.staticfiles import StaticFiles
+from .config import settings
+from .services.whatsapp import WhatsAppClient
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
 logger = logging.getLogger(__name__)
@@ -50,11 +49,11 @@ async def lifespan(app: FastAPI):
     # )
 
     model = ChatOpenAI(
-    model="deepseek/deepseek-chat-v3.1:free",
-    base_url="https://openrouter.ai/api/v1",
-    api_key=settings.OPENROUTER_API_KEY, 
-    temperature=0,
-    max_tokens=500,
+        model="deepseek/deepseek-chat-v3.1:free",
+        base_url="https://openrouter.ai/api/v1",
+        api_key=settings.OPENROUTER_API_KEY,
+        temperature=0,
+        max_tokens=500,
     )
 
     # model = ChatGoogleGenerativeAI(

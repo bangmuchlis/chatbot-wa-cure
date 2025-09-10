@@ -16,9 +16,7 @@ CHROMA_COLLECTION_NAME = "documents"
 CHROMA_PERSIST_DIR = os.path.join(PROJECT_ROOT, "chroma_db")
 #CHROMA_PERSIST_DIR = "/mnt/c/Users/aiai/Documents/Development/Projects/chatbot-wwm/chroma_db"
 
-
 def load_excel(file_path: str):
-    """Load Excel file and return list of Documents."""
     df = pd.read_excel(file_path)
     documents = []
 
@@ -31,7 +29,6 @@ def load_excel(file_path: str):
 
 
 def ingest_documents():
-    """Loads documents (PDF + Excel), splits them, and stores them in Chroma with BGE-M3 embeddings."""
     print("Starting document ingestion process...")
 
     documents_path = os.path.join(PROJECT_ROOT, 'data', 'docs')
@@ -42,7 +39,7 @@ def ingest_documents():
 
     all_documents = []
 
-    # === Load PDFs ===
+    # Load PDFs
     print(f"Loading PDF documents from: {documents_path}")
     pdf_loader = DirectoryLoader(
         documents_path,
@@ -55,7 +52,7 @@ def ingest_documents():
     all_documents.extend(pdf_documents)
     print(f"Loaded {len(pdf_documents)} PDF document(s).")
 
-    # === Load Excels ===
+    # Load Excels
     print(f"Loading Excel documents from: {documents_path}")
     excel_files = [f for f in os.listdir(documents_path) if f.endswith((".xlsx", ".xls"))]
     for file in excel_files:
@@ -70,12 +67,10 @@ def ingest_documents():
 
     print(f"Total {len(all_documents)} documents loaded.")
 
-    # === Split text ===
     text_splitter = RecursiveCharacterTextSplitter(chunk_size=1000, chunk_overlap=100)
     docs = text_splitter.split_documents(all_documents)
     print(f"Documents split into {len(docs)} text chunks.")
 
-    # === Embedding ===
     embedding_function = OllamaEmbeddings(model=settings.OLLAMA_EMBEDDING)
     print("Using BGE-M3 embeddings...")
 

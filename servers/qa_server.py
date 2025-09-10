@@ -7,12 +7,8 @@ mcp = FastMCP(name="Knowledge Base")
 
 @mcp.tool()
 def get_knowledge_base() -> str:
-    """
-    Mengambil dan memformat semua data dari file JSON knowledge base.
-    Gunakan tool ini untuk menjawab pertanyaan umum tentang layanan, alamat, atau informasi dasar perusahaan.
-    """
     try:
-        kb_path = os.path.join(os.path.dirname(__file__), "..", "data", "data.json")
+        kb_path = os.path.join(os.path.dirname(__file__), "..", "data", "json", "data.json")
         with open(kb_path, "r", encoding="utf-8") as f:
             kb_data = json.load(f)
 

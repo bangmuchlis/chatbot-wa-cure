@@ -11,6 +11,7 @@ from pathlib import Path
 from langchain_openai import ChatOpenAI
 from langchain_google_genai import ChatGoogleGenerativeAI
 from langchain_groq import ChatGroq
+from fastapi.staticfiles import StaticFiles
 
 logging.basicConfig(level=logging.INFO, format="%(asctime)s - %(levelname)s - %(message)s")
 logger = logging.getLogger(__name__)
@@ -128,5 +129,5 @@ def create_app() -> FastAPI:
 
     from . import chat
     app.include_router(chat.router)
-
+    app.mount("/static", StaticFiles(directory="data/images"), name="static")
     return app

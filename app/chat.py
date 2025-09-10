@@ -7,6 +7,7 @@ from typing import Set
 from fastapi import APIRouter, Request, HTTPException, BackgroundTasks
 from .config import settings
 from langchain_core.messages import HumanMessage, AIMessage, SystemMessage
+from app.utils.ingest_img import search_image
 
 router = APIRouter()
 logger = logging.getLogger(__name__)
@@ -48,45 +49,39 @@ async def process_message_background(
     start_time = time.perf_counter() 
     try:
         logger.info(f"[{message_id}] 🚀 Background task started for sender ...{sender_id[-4:]}")
-        
-        user_history = chat_histories.get(sender_id, [])
-        logger.info(f"[{message_id}] 📜 Loaded chat history ({len(user_history)} messages) for ...{sender_id[-4:]}")
-        logger.info(f"[{message_id}] 📩 Chat history content {user_history}")
 
+        if "gambar" in incoming_text.lower():
+            image_url = search_image(incoming_text, n_results=1)
+            if image_url:
+                await whatsapp_client.send_image(sender_id, image_url, is_link=True)
+
+                logger.info(f"[{message_id}] 🖼 Sent image for query: {incoming_text}")
+                return
+            else:
+                await whatsapp_client.send_message(sender_id, "Maaf, gambar tidak ditemukan.")
+                return
+
+        user_history = chat_histories.get(sender_id, [])
         full_conversation = [SystemMessage(content=system_instruction)]
         full_conversation.extend(user_history)
         full_conversation.append(HumanMessage(content=incoming_text))
-        logger.info(f"[{message_id}] 📝 Full conversation prepared with {len(full_conversation)} messages")
-        
+
         input_data = {"messages": full_conversation}
-        logger.info(f"[{message_id}] 🤖 Invoking agent with input: {incoming_text}")
-        
         result = await agent.ainvoke(input_data)
-        logger.info(f"[{message_id}] ✅ Agent returned raw result: {str(result)[:200]}...")
 
         raw_response = extract_clean_response(result)
-        logger.info(f"[{message_id}] 🧹 Cleaned response: {raw_response[:200] if raw_response else 'EMPTY'}")
-        
-        if not raw_response:
-            ai_response = "Maaf, sistem gagal memproses permintaan Anda."
-            logger.warning(f"[{message_id}] ⚠️ Agent returned empty response for ...{sender_id[-4:]}")
-        else:
-            ai_response = raw_response
-            logger.info(f"[{message_id}] 🟢 Using cleaned agent response for ...{sender_id[-4:]}")
-        
+        ai_response = raw_response if raw_response else "Maaf, sistem gagal memproses permintaan Anda."
+
         # Update history
         user_history.extend([
             HumanMessage(content=incoming_text),
             AIMessage(content=ai_response)
         ])
         chat_histories[sender_id] = user_history
-        logger.info(f"[{message_id}] 💾 Updated chat history (total {len(user_history)} messages)")
-        
+
         if len(ai_response) > 4000:
-            logger.warning(f"[{message_id}] ⚠️ Response length {len(ai_response)} > 4000, truncating...")
             ai_response = ai_response[:4000] + "..."
-        
-        logger.info(f"[{message_id}] 📤 Sending response to {sender_id[-4:]}: {ai_response[:200]}...")
+
         await whatsapp_client.send_message(sender_id, ai_response)
 
     except Exception as e:
@@ -100,9 +95,8 @@ async def process_message_background(
         end_time = time.perf_counter()
         elapsed = end_time - start_time
         logger.info(f"[{message_id}] ⏱ Response time: {elapsed:.2f} seconds")
-
         processing_ids.discard(message_id)
-        logger.info(f"[{message_id}] ✅ Finished processing (removed from processing_ids)")
+
 
 @router.get("/webhook")
 async def webhook_verify(request: Request):

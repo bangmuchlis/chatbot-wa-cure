@@ -1,12 +1,16 @@
 import logging
 import aiohttp
 import json
+import os
 
 logger = logging.getLogger(__name__)
 
 class WhatsAppClient:
     def __init__(self, access_token: str, phone_number_id: str, meta_api_version: str, debug_logging: bool):
+        self.access_token = access_token
+        self.phone_number_id = phone_number_id
         self.api_url = f"https://graph.facebook.com/{meta_api_version}/{phone_number_id}/messages"
+        self.media_url = f"https://graph.facebook.com/{meta_api_version}/{phone_number_id}/media"
         self.headers = {
             "Authorization": f"Bearer {access_token}",
             "Content-Type": "application/json",
@@ -14,21 +18,17 @@ class WhatsAppClient:
         self.debug_logging = debug_logging
 
     async def send_message(self, recipient_id: str, message_text: str) -> bool:
-        """Sends a text message to a WhatsApp user."""
         if not message_text:
-            logger.warning("Attempted to send an empty message. Aborting.")
+            logger.warning("⚠️ Attempted to send an empty message. Aborting.")
             return False
 
         payload = {
             "messaging_product": "whatsapp",
             "to": recipient_id,
             "type": "text",
-            "text": {
-                "body": message_text.strip()
-            }
+            "text": {"body": message_text.strip()}
         }
 
-        logger.info(f"🤖 Sending answer to ...{recipient_id[-4:]}:")
         if self.debug_logging:
             logger.debug(f"Payload: {json.dumps(payload, indent=2)}")
 
@@ -36,15 +36,70 @@ class WhatsAppClient:
             async with aiohttp.ClientSession() as session:
                 async with session.post(self.api_url, headers=self.headers, json=payload) as response:
                     if 200 <= response.status < 300:
-                        logger.info(f"Message sent successfully to {recipient_id}. Status: {response.status}")
+                        logger.info(f"✅ Message sent to {recipient_id}")
                         return True
                     else:
                         error_details = await response.json()
-                        logger.error(
-                            f"Failed to send message. Status: {response.status}, "
-                            f"Message: {response.reason}, Response: {json.dumps(error_details)}"
-                        )
+                        logger.error(f"❌ Failed to send message: {error_details}")
                         return False
         except Exception as e:
-            logger.error(f"An exception occurred while sending message: {str(e)}")
+            logger.error(f"Exception while sending message: {e}")
+            return False
+
+    async def upload_media(self, file_path: str, mime_type: str = "image/png") -> str | None:
+        """Upload local image to WhatsApp API and return media_id"""
+        if not os.path.exists(file_path):
+            logger.error(f"⚠️ File not found: {file_path}")
+            return None
+
+        url = f"https://graph.facebook.com/v21.0/{self.phone_number_id}/media"
+        headers = {"Authorization": f"Bearer {self.access_token}"}
+
+        try:
+            async with aiohttp.ClientSession() as session:
+                with open(file_path, "rb") as f:
+                    form = aiohttp.FormData()
+                    form.add_field("file", f, filename=os.path.basename(file_path), content_type=mime_type)
+                    form.add_field("messaging_product", "whatsapp")
+
+                    async with session.post(url, headers=headers, data=form) as response:
+                        resp = await response.json()
+                        if response.status == 200:
+                            media_id = resp.get("id")
+                            logger.info(f"📤 Uploaded media, id={media_id}")
+                            return media_id
+                        else:
+                            logger.error(f"❌ Failed to upload media: {resp}")
+                            return None
+        except Exception as e:
+            logger.error(f"Exception while uploading media: {e}")
+            return None
+
+    async def send_image(self, recipient_id: str, media: str, is_link: bool = False) -> bool:
+        """
+        Kirim gambar ke WhatsApp.
+        - Kalau is_link=True → media dianggap URL publik.
+        - Kalau is_link=False → media dianggap media_id hasil upload.
+        """
+        image_payload = {"link": media} if is_link else {"id": media}
+
+        payload = {
+            "messaging_product": "whatsapp",
+            "to": recipient_id,
+            "type": "image",
+            "image": image_payload
+        }
+
+        try:
+            async with aiohttp.ClientSession() as session:
+                async with session.post(self.api_url, headers=self.headers, json=payload) as response:
+                    if 200 <= response.status < 300:
+                        logger.info(f"✅ Image sent to {recipient_id} ({'link' if is_link else 'id'})")
+                        return True
+                    else:
+                        error_details = await response.json()
+                        logger.error(f"❌ Failed to send image: {error_details}")
+                        return False
+        except Exception as e:
+            logger.error(f"Exception sending image: {e}")
             return False

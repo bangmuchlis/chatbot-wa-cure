@@ -97,7 +97,7 @@ def search_image(query: str, n_results: int = 3):
     """
     Cari gambar dengan prioritas:
     1. Exact match atau high-score word match
-    2. Embedding search sebagai fallback
+    2. Embedding search dengan threshold ketat sebagai fallback
     """
     # Ambil semua item untuk pencarian manual
     all_items = collection.get(include=["metadatas"])
@@ -127,21 +127,52 @@ def search_image(query: str, n_results: int = 3):
         print(f"📍 Found medium-score match: '{best_meta['label']}' (score: {candidates[0][0]:.2f})")
         return f"{BASE_URL}/{filename}"
     
-    # Fallback ke embedding search
+    # Fallback ke embedding search dengan threshold yang sangat ketat
     print(f"🔍 Using embedding search for: '{query}'")
     results = collection.query(
         query_texts=[query],
         n_results=n_results,
-        include=["metadatas"]
+        include=["metadatas", "distances"]
     )
     
     if results and results.get("metadatas") and results["metadatas"][0]:
+        # Ambil distance/similarity score dari embedding
+        distances = results.get("distances", [[]])[0]
         meta = results["metadatas"][0][0]
-        filename = os.path.basename(meta["path"])
-        print(f"🤖 Embedding search result: '{meta['label']}'")
-        return f"{BASE_URL}/{filename}"
+        
+        if distances:
+            # ChromaDB menggunakan distance (semakin kecil = semakin mirip)
+            distance = distances[0]
+            similarity = 1 - distance  # Convert ke similarity score
+            
+            print(f"🤖 Embedding distance: {distance:.3f}, similarity: {similarity:.3f}")
+            
+            # Tambahan validasi semantik: cek apakah ada kata kunci yang bertentangan
+            query_lower = query.lower()
+            label_lower = meta["label"].lower()
+            
+            # Daftar warna yang umum - jika query menyebutkan warna yang berbeda, reject
+            colors = ["merah", "kuning", "biru", "hijau", "putih", "hitam", "orange", "ungu", "pink"]
+            query_colors = [color for color in colors if color in query_lower]
+            label_colors = [color for color in colors if color in label_lower]
+            
+            # Jika ada warna spesifik di query tapi tidak match dengan label, reject
+            if query_colors and label_colors and not set(query_colors).intersection(set(label_colors)):
+                print(f"❌ Color mismatch: query has {query_colors}, label has {label_colors}")
+                print(f"❌ Embedding result rejected: semantic mismatch")
+                return None
+            
+            # Threshold yang lebih ketat: hanya terima jika very similar
+            if distance < 0.3 and similarity > 0.7:  # Threshold jauh lebih ketat
+                filename = os.path.basename(meta["path"])
+                print(f"✅ Embedding search result accepted: '{meta['label']}'")
+                return f"{BASE_URL}/{filename}"
+            else:
+                print(f"❌ Embedding result rejected: similarity too low ({similarity:.3f}) or distance too high ({distance:.3f})")
+        else:
+            print(f"⚠️ No distance scores available from embedding search")
     
-    print(f"❌ No match found for: '{query}'")
+    print(f"❌ No suitable match found for: '{query}'")
     return None
 
 if __name__ == "__main__":

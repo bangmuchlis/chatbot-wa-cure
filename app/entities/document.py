@@ -1,6 +1,6 @@
 from sqlalchemy import Column, Integer, String, LargeBinary, DateTime
 from sqlalchemy.sql import func
-from .database import Base
+from app.entities.base import Base
 
 class PDFDocument(Base):
     __tablename__ = "document"

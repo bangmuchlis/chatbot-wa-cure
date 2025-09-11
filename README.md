@@ -27,11 +27,9 @@ sqlalchemy.url = postgresql://user:password@localhost/mydb
 Import SQLAlchemy metadata for autogenerate:
 
 ```python
-from app.models import Base
-
-config = context.config
-fileConfig(config.config_file_name)
+from app.entities.base import Base
 target_metadata = Base.metadata
+
 ```
 
 ---

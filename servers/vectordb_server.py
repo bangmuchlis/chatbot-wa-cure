@@ -1,0 +1,75 @@
+import os
+import sys
+import json
+import logging
+
+from mcp.server.fastmcp import FastMCP
+from langchain_community.vectorstores import Chroma
+from langchain_ollama import OllamaEmbeddings
+from dotenv import load_dotenv
+
+logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(message)s')
+
+PROJECT_ROOT_PATH = os.path.abspath(os.path.join(os.path.dirname(__file__), '..'))
+load_dotenv(os.path.join(PROJECT_ROOT_PATH, '.env'))
+
+OLLAMA_EMBEDDING_MODEL = os.getenv("OLLAMA_EMBEDDING")
+CHROMA_PERSIST_DIR = os.path.join(PROJECT_ROOT_PATH, "chroma_db")
+CHROMA_COLLECTION_NAME = "documents"
+
+mcp = FastMCP(name="VectorDB_Server")
+
+@mcp.tool()
+def vectordb_query(query: str, top_k: int = 5) -> str:
+    """
+    Performs a similarity search on a Chroma vector database to retrieve relevant documents.
+
+    This tool connects to a persistent ChromaDB, uses Ollama embeddings to vectorize
+    the user's query, and fetches the top_k most similar documents.
+
+    Args:
+        query: The user's search query string.
+        top_k: The number of top relevant documents to retrieve. Defaults to 5.
+
+    Returns:
+        A formatted string containing the content and metadata of the found documents,
+        or an error message if the query fails.
+    """
+    try:
+        logging.info(f"Initializing embeddings with model: {OLLAMA_EMBEDDING_MODEL}")
+        embedding_function = OllamaEmbeddings(model=OLLAMA_EMBEDDING_MODEL)
+        
+        logging.info(f"Connecting to ChromaDB collection '{CHROMA_COLLECTION_NAME}' at '{CHROMA_PERSIST_DIR}'")
+        vectordb = Chroma(
+            collection_name=CHROMA_COLLECTION_NAME,
+            persist_directory=CHROMA_PERSIST_DIR,
+            embedding_function=embedding_function
+        )
+        
+        logging.info(f"Performing similarity search for query: '{query}' with top_k={top_k}")
+        results = vectordb.similarity_search(query, k=top_k)
+        
+        if not results:
+            logging.warning("No relevant documents were found for the query.")
+            return "No relevant documents were found in the RAG system."
+
+        logging.info(f"Found {len(results)} relevant document(s). Formatting output.")
+        rag_text = "The following relevant documents were found by the RAG system:\n\n"
+        for i, doc in enumerate(results, 1):
+            rag_text += f"--- Document {i} ---\n"
+            rag_text += f"Content: {doc.page_content}\n"
+
+            metadata_str = json.dumps(doc.metadata, indent=2, ensure_ascii=False)
+            rag_text += f"Metadata: {metadata_str}\n\n"
+
+        return rag_text
+    except Exception as e:
+        logging.error(f"An error occurred during the RAG query: {e}", exc_info=True)
+        return f"An error occurred while querying the RAG system: {str(e)}"
+
+if __name__ == "__main__":
+    if PROJECT_ROOT_PATH not in sys.path:
+        sys.path.append(PROJECT_ROOT_PATH)
+        
+    logging.info("Starting FastMCP server with stdio transport...")
+    mcp.run(transport="stdio")

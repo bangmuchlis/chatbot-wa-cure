@@ -10,7 +10,7 @@ from langchain.schema import Document
 
 PROJECT_ROOT = os.path.abspath(os.path.join(os.path.dirname(__file__), '..', '..'))
 sys.path.append(PROJECT_ROOT)
-from app.config import settings
+from app.core.config import settings
 
 CHROMA_COLLECTION_NAME = "documents"
 CHROMA_PERSIST_DIR = os.path.join(PROJECT_ROOT, "chroma_db")
@@ -75,6 +75,7 @@ def ingest_documents():
     print("Using BGE-M3 embeddings...")
 
     print(f"Storing data in Chroma collection: '{CHROMA_COLLECTION_NAME}'...")
+    
     vectordb = Chroma.from_documents(
         docs,
         embedding=embedding_function,

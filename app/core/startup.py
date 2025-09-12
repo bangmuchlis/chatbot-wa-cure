@@ -20,7 +20,7 @@ async def lifespan(app: FastAPI):
     client, tool_names = await init_mcp_client(BASE_DIR)
     logger.info(f"Tools loaded: {tool_names}")
 
-    model = get_model("openrouter")
+    model = get_model("ollama")
 
     agent = init_agent(model, await client.get_tools())
 

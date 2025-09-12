@@ -9,15 +9,23 @@ logging.basicConfig(level=logging.INFO, format='%(asctime)s - %(levelname)s - %(
 mcp = FastMCP(name="QA_Server")
 
 @mcp.tool()
-def get_knowledge_base() -> str:
+def get_qa_data() -> str:
     """
-    Reads a JSON file from a predefined path and formats its content into a readable string.
+    Retrieve exact answers to predefined company policy questions from a static knowledge base.
+    Use this tool ONLY when the user asks about specific company policies, procedures, or rules that are likely listed in our HR handbook.
+    
+    Examples of questions this tool is designed for:
+    - "What is our leave policy?"
+    - "How do I apply for software license?"
+    - "Can I work remotely?"
+    - "What's the expense reporting process?"
 
-    This tool expects the JSON file to be a list of question-answer dictionaries.
-    If the format is different, it will fall back to a raw JSON dump.
+    This tool does NOT perform semantic search. It returns exact matches from a fixed list of Q&A pairs.
+    If the question matches one of the known questions, return the precise answer.
+    If no match is found, return "Maaf, saya tidak memiliki informasi mengenai hal tersebut."
 
     Returns:
-        A formatted string containing the knowledge base content, or an error message.
+        A formatted string with the answer, or an error message if file is missing or malformed.
     """
     try:
         kb_path = os.path.join(os.path.dirname(__file__), "..", "data", "json", "data.json")

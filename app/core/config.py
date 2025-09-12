@@ -24,7 +24,7 @@ class Settings:
 
     # Database
     DATABASE_URL: bool = os.getenv('DATABASE_URL')
-    DEBUG_LOGGING: bool = os.getenv('LOGGING')
+    DEBUG_LOGGING: bool = os.getenv('DEBUG_LOGGING')
     PORT: int = int(os.getenv('PORT', 5000))
 
 settings = Settings()

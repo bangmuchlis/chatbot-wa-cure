@@ -5,7 +5,7 @@ from app.api import root_routes, webhook_routes
 
 
 def create_app() -> FastAPI:
-    app = FastAPI(title="WhatsApp RAG Bot", lifespan=lifespan)
+    app = FastAPI(title="WhatsApp MCP Bot", lifespan=lifespan)
     app.include_router(root_routes.router)
     app.include_router(webhook_routes.router)
 

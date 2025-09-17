@@ -6,6 +6,7 @@ async def init_mcp_client(base_dir: Path) -> tuple[MultiServerMCPClient, str]:
 
     QA_SERVER = str(project_root / "servers" / "qa_server.py")
     VECTORDB_SERVER = str(project_root / "servers" / "vectordb_server.py")
+    SCHEDULER_SERVER = str(project_root / "servers" / "scheduler_server.py")
 
     client = MultiServerMCPClient({
         "qa": {
@@ -16,6 +17,10 @@ async def init_mcp_client(base_dir: Path) -> tuple[MultiServerMCPClient, str]:
         "vectordb": {
             "command": "python", 
             "args": [VECTORDB_SERVER], 
+            "transport": "stdio"},
+        "scheduler": {
+            "command": "python", 
+            "args": [SCHEDULER_SERVER], 
             "transport": "stdio"},
     })
 

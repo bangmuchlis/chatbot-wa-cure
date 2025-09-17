@@ -6,7 +6,7 @@ from app.services.llm_service import get_model
 from app.services.mcp_service import init_mcp_client
 from app.services.agent_service import init_agent
 from app.services.whatsapp_service import WhatsAppClient
-from app.core.prompt import SYSTEM_INSTRUCTION
+from app.core.prompt import build_system_instruction
 from app.core.config import settings
 
 logger = logging.getLogger(__name__)
@@ -35,7 +35,7 @@ async def lifespan(app: FastAPI):
     app.state.agent = agent
     app.state.whatsapp_client = whatsapp_client
     app.state.chat_histories = {}
-    app.state.system_instruction = SYSTEM_INSTRUCTION.format(tools=tool_names)
+    app.state.system_instruction = build_system_instruction(tool_names)
     app.state.processing_message_ids = set()
 
     yield

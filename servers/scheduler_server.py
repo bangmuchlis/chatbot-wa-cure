@@ -180,6 +180,26 @@ def _create_message(sender: str, to: str, subject: str, body: str, is_html: bool
     msg.attach(MIMEText(body, "html" if is_html else "plain"))
     return base64.urlsafe_b64encode(msg.as_bytes()).decode("utf-8")
 
+@mcp.tool()
+def delete_calendar_event(event_id: str) -> dict:
+    """
+    Delete a Google Calendar event.
+    User must provide event_id.
+    """
+    try:
+        if not event_id:
+            return {"success": False, "error": "Event ID is required for deletion."}
+
+        service = get_gcal_service()
+        service.events().delete(calendarId="primary", eventId=event_id, sendUpdates="all").execute()
+
+        log.info("Deleted event %s", event_id)
+        return {"success": True, "deleted_event_id": event_id}
+
+    except Exception as e:
+        log.error("delete_calendar_event error: %s", e, exc_info=True)
+        return {"success": False, "error": str(e)}
+
 
 @mcp.tool()
 def send_email(to: list[str] | str | None, subject: str, body: str, is_html: bool = True) -> dict:

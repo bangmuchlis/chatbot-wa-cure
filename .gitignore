@@ -2,7 +2,7 @@
 .myenv/
 chroma_db/
 alembic/
-
+src/
 __pycache__
 .env
 alembic.ini

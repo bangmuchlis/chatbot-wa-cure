@@ -19,5 +19,9 @@
   {
     "question": "Apa proses untuk melaporkan insiden keamanan?",
     "answer": "Jika Anda menemukan insiden keamanan, segera hubungi Tim Keamanan di security@company.com atau telepon hotline keamanan 24/7. Jangan mencoba menyelidiki atau menyelesaikan insiden sendiri. Catat apa yang Anda amati, termasuk waktu dan sistem yang terpengaruh. Tim Keamanan akan memandu Anda melalui proses respons insiden dan mungkin memerlukan bantuan Anda untuk penyelidikan."
-  }
+  },
+    {
+    "question": "Berapa biaya pembuatan kartu identitas kerja baru?",
+    "answer": "100 rb"
+    }
 ]

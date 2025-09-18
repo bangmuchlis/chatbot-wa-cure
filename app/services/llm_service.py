@@ -10,7 +10,9 @@ def get_model(model_type="openrouter"):
             model=settings.OLLAMA_MODEL,
             base_url=settings.OLLAMA_URL,
             temperature=0,
-            num_predict=500
+            num_predict=500,
+            top_p=0.9,
+            repeat_penalty=1.1
         )
     elif model_type == "openrouter":
         return ChatOpenAI(

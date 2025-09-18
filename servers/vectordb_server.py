@@ -20,7 +20,7 @@ CHROMA_COLLECTION_NAME = "documents"
 mcp = FastMCP(name="VectorDB_Server")
 
 @mcp.tool()
-def vectordb_query(query: str, top_k: int = 5) -> str:
+def vectordb_query(query: str, top_k: int = 3) -> str:
     """
     Perform semantic similarity search on company documents using vector embeddings.
     Use this tool ONLY when the user asks open-ended, vague, or complex questions that are NOT explicitly listed in the static Q&A database.

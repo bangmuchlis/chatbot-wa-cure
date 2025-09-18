@@ -67,7 +67,7 @@ def ingest_documents():
 
     print(f"Total {len(all_documents)} documents loaded.")
 
-    text_splitter = RecursiveCharacterTextSplitter(chunk_size=1000, chunk_overlap=100)
+    text_splitter = RecursiveCharacterTextSplitter(chunk_size=800, chunk_overlap=100)
     docs = text_splitter.split_documents(all_documents)
     print(f"Documents split into {len(docs)} text chunks.")
 
